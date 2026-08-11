@@ -1,28 +1,44 @@
-name: "Build iStoreOS 24.10.1 Installer ISO"
+name: "Build iStoreOS Installer ISO"
 
 on:
  workflow_dispatch:
+   inputs:
+     upstream_release:
+       description: "上游 Release 标签；latest 自动选择最新 iStoreOS x86-64 固件"
+       required: true
+       default: "latest"
+     publish:
+       description: "是否创建或更新 GitHub Release"
+       required: false
+       default: true
+       type: boolean
+
+permissions:
+  contents: write
 
 jobs:
   build-release:
     name: "Build and Release"
     runs-on: "ubuntu-22.04"
+    env:
+      ISTOREOS_RELEASE: ${{ inputs.upstream_release }}
 
     steps:
 
       - name: "Checking out git repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       
       - name: Set executable permissions
         run: |
-          chmod +x ${{ github.workspace }}/istoreos.sh
-          chmod +x ${{ github.workspace }}/supportFiles/istoreos/build.sh
+          chmod +x "${{ github.workspace }}/istoreos.sh"
+          chmod +x "${{ github.workspace }}/supportFiles/istoreos/build.sh"
 
       - name: "Build iStoreOS Installer ISO"
         run: |
-          ./istoreos.sh
+          bash ./istoreos.sh
       
       - name: "Publish"
+        if: ${{ inputs.publish }}
         uses: softprops/action-gh-release@v2.2.1
         with:
           tag_name: "iStoreOS-Installer-x86_64-ISO"

@@ -48,9 +48,10 @@ else
 fi
 
 mkdir -p output
+repo_root="$(pwd -P)"
 docker run --privileged --rm \
-    -v $(pwd)/output:/output \
-    -v $(pwd)/supportFiles:/supportFiles:ro \
-    -v $(pwd)/imm/custom.img:/mnt/custom.img \
+    -v "${repo_root}/output:/output" \
+    -v "${repo_root}/supportFiles:/supportFiles:ro" \
+    -v "${repo_root}/imm/custom.img:/mnt/custom.img:ro" \
     debian:buster \
     /supportFiles/custom/build.sh

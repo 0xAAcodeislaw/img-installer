@@ -2,30 +2,53 @@ name: "Build EzOpWrt Installer ISO"
 
 on:
  workflow_dispatch:
+   inputs:
+     download_url:
+       description: "EzOpWrt 上游固件直链（.img.gz/.img.xz/.img.zip）"
+       required: true
+     publish:
+       description: "是否创建或更新 GitHub Release"
+       required: false
+       default: true
+       type: boolean
+
+permissions:
+  contents: write
 
 jobs:
   build-release:
     name: "Build and Release"
     runs-on: "ubuntu-22.04"
+    env:
+      DOWNLOAD_URL: ${{ inputs.download_url }}
 
     steps:
       - name: "Get Date"
         run: |
-          echo "DATESTAMP=$(date +'%Y-%m-%d')" >> $GITHUB_ENV 
+          echo "DATESTAMP=$(date +'%Y-%m-%d')" >> "$GITHUB_ENV"
 
       - name: "Checking out git repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       
       - name: Set executable permissions
         run: |
-          chmod +x ${{ github.workspace }}/ezopwrt.sh
-          chmod +x ${{ github.workspace }}/supportFiles/ezopwrt/build.sh
+          chmod +x "${{ github.workspace }}/ezopwrt.sh"
+          chmod +x "${{ github.workspace }}/supportFiles/ezopwrt/build.sh"
+
+      - name: Validate Download URL
+        run: |
+          if [[ ! "$DOWNLOAD_URL" =~ ^https?://[^[:space:]]+\.(gz|xz|zip)(\?[^[:space:]]*)?$ ]]; then
+            echo "❌ 错误：地址需以 http(s) 开头且扩展名为 .gz/.xz/.zip"
+            echo "当前输入：$DOWNLOAD_URL"
+            exit 1
+          fi
 
       - name: "Build Image"
         run: |
-          ./ezopwrt.sh
+          bash ./ezopwrt.sh "$DOWNLOAD_URL"
       
       - name: "Publish"
+        if: ${{ inputs.publish }}
         uses: softprops/action-gh-release@v2.2.1
         with:
           tag_name: "EzOpWrt-Installer-x86_64-ISO"

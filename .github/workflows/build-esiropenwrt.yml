@@ -2,6 +2,15 @@ name: "Build eSirOpenWrt Installer ISO"
 
 on:
  workflow_dispatch:
+   inputs:
+     publish:
+       description: "是否创建或更新 GitHub Release"
+       required: false
+       default: true
+       type: boolean
+
+permissions:
+  contents: write
 
 jobs:
   build-release:
@@ -11,21 +20,22 @@ jobs:
     steps:
       - name: "Get Date"
         run: |
-          echo "DATESTAMP=$(date +'%Y-%m-%d')" >> $GITHUB_ENV 
+          echo "DATESTAMP=$(date +'%Y-%m-%d')" >> "$GITHUB_ENV"
 
       - name: "Checking out git repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       
       - name: Set executable permissions
         run: |
-          chmod +x ${{ github.workspace }}/esir.sh
-          chmod +x ${{ github.workspace }}/supportFiles/esirplayground/build.sh
+          chmod +x "${{ github.workspace }}/esir.sh"
+          chmod +x "${{ github.workspace }}/supportFiles/esirplayground/build.sh"
 
       - name: "Build Image"
         run: |
           ./esir.sh
       
       - name: "Publish"
+        if: ${{ inputs.publish }}
         uses: softprops/action-gh-release@v2.2.1
         with:
           tag_name: "eSirOpenWrt-Installer-x86_64-ISO"

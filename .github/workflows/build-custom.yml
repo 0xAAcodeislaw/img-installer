@@ -7,8 +7,13 @@ on:
         description: '请输入下载地址(扩展名 .img.gz/.img.xz/.img.zip)'
         required: true
         default: 'https://default.example.com/file.img.gz'
+      publish:
+        description: '是否创建或更新 GitHub Release'
+        required: false
+        default: true
+        type: boolean
 
-# 显式添加权限，确保 Release 发布正常
+# Release 上传需要写权限；仓库若采用只读默认权限，显式声明可避免 403。
 permissions:
   contents: write
 
@@ -17,10 +22,12 @@ jobs:
   build-release:
     name: "Build and Release"
     runs-on: "ubuntu-22.04"
+    env:
+      DOWNLOAD_URL: ${{ inputs.download_url }}
 
     steps:
       - name: "Checking out git repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set executable permissions
         run: |
@@ -30,25 +37,24 @@ jobs:
       - name: Validate Download URL
         run: |
           DEFAULT_URL="https://default.example.com/file.img.gz"
-          USER_INPUT_URL="${{ github.event.inputs.download_url }}"
           
-          if [[ "$USER_INPUT_URL" == "$DEFAULT_URL" ]]; then
+          if [[ "$DOWNLOAD_URL" == "$DEFAULT_URL" ]]; then
             echo "❌ 错误：请修改默认下载地址！当前地址为无效占位符。"
             exit 1
           fi
           
-          if [[ ! "$USER_INPUT_URL" =~ ^https?://.+\.[gG][zZ]$|^https?://.+\.[xX][zZ]$|^https?://.+\.[zZ][iI][pP]$ ]]; then
+          if [[ ! "$DOWNLOAD_URL" =~ ^https?://[^[:space:]]+\.(gz|xz|zip)(\?[^[:space:]]*)?$ ]]; then
             echo "❌ 错误：地址需以 http(s) 开头且扩展名为 .gz/.xz/.zip"
-            echo "当前输入：$USER_INPUT_URL"
+            echo "当前输入：$DOWNLOAD_URL"
             exit 1
           fi
 
       - name: "Build Image"
         run: |
-          download_url="${{ github.event.inputs.download_url }}"
-          ./custom.sh "$download_url"
+          bash ./custom.sh "$DOWNLOAD_URL"
 
       - name: "Publish"
+        if: ${{ inputs.publish }}
         uses: softprops/action-gh-release@v2.2.1
         with:
           tag_name: "Custom-Installer-x86_64-ISO"

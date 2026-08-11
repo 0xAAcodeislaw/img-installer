@@ -32,7 +32,21 @@ extension="${extension,,}"
 case "$extension" in
   gz)
     echo "gz正在解压$OUTPUT_PATH"
-    gunzip -f "$OUTPUT_PATH"
+    gzip_log="$(mktemp)"
+    trap 'rm -f "$gzip_log"' EXIT
+    if ! gzip -t "$OUTPUT_PATH" 2>"$gzip_log"; then
+      if ! grep -qi 'trailing garbage ignored' "$gzip_log"; then
+        cat "$gzip_log" >&2
+        exit 1
+      fi
+      echo "⚠️ 上游 gzip 包含可忽略的 trailing garbage，继续提取有效镜像。" >&2
+    fi
+    if ! gzip -dc "$OUTPUT_PATH" > imm/custom.img 2>"$gzip_log"; then
+      if ! grep -qi 'trailing garbage ignored' "$gzip_log"; then
+        cat "$gzip_log" >&2
+        exit 1
+      fi
+    fi
     ;;
   zip)
     echo "zip正在解压$OUTPUT_PATH"
@@ -53,7 +67,9 @@ if [[ -z "$final_name" ]]; then
   echo "❌ 错误：压缩包中没有找到 .img 文件"
   exit 1
 fi
-mv -f -- "$final_name" imm/custom.img
+if [[ "$final_name" != "imm/custom.img" ]]; then
+  mv -f -- "$final_name" imm/custom.img
+fi
 
 
 # 检查最终文件

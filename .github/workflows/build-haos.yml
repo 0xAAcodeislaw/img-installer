@@ -8,14 +8,19 @@ on:
         required: true
         default: 'https://github.com/home-assistant/operating-system/releases/download/15.0/haos_generic-x86-64-15.0.img.xz'
 
+permissions:
+  contents: write
+
 jobs:
   build-release:
     name: "Build and Release"
     runs-on: "ubuntu-22.04"
+    env:
+      DOWNLOAD_URL: ${{ inputs.download_url }}
 
     steps:
       - name: "Checking out git repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set executable permissions
         run: |
@@ -24,18 +29,15 @@ jobs:
 
       - name: Validate Download URL
         run: |
-          USER_INPUT_URL="${{ github.event.inputs.download_url }}"
-          
-          if [[ ! "$USER_INPUT_URL" =~ ^https?://.+\.[gG][zZ]$|^https?://.+\.[xX][zZ]$|^https?://.+\.[zZ][iI][pP]$ ]]; then
+          if [[ ! "$DOWNLOAD_URL" =~ ^https?://[^[:space:]]+\.(gz|xz|zip)(\?[^[:space:]]*)?$ ]]; then
             echo "❌ 错误：地址需以 http(s) 开头且扩展名为 .gz/.xz/.zip"
-            echo "当前输入：$USER_INPUT_URL"
+            echo "当前输入：$DOWNLOAD_URL"
             exit 1
           fi
 
       - name: "Build Image"
         run: |
-          download_url="${{ github.event.inputs.download_url }}"
-          ./haos.sh "$download_url"
+          bash ./haos.sh "$DOWNLOAD_URL"
 
       - name: "Publish"
         uses: softprops/action-gh-release@v2.2.1

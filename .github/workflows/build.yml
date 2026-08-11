@@ -13,18 +13,34 @@ on:
           - "debian12_minimal"
           - "ubuntu24_minimal"
           - "homeassistant_debian12_minimal"
+      upstream_release:
+        description: "上游固件 Release 标签；latest 会自动选择匹配类型的最新版本"
+        required: true
+        default: "latest"
+
+permissions:
+  contents: write
 
 jobs:
   build-release:
     runs-on: ubuntu-22.04
     env:
-      VERSION_TYPE: ${{ github.event.inputs.version_type }}
+      VERSION_TYPE: ${{ inputs.version_type }}
+      ARMBIAN_RELEASE: ${{ inputs.upstream_release }}
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Build Image
-        run: ./build.sh
+        run: bash ./build.sh
+
+      - name: Report selected upstream firmware
+        run: |
+          {
+            echo "### 上游固件"
+            echo "- Release: \`${ARMBIAN_SELECTED_RELEASE}\`"
+            echo "- Asset: \`${ARMBIAN_SELECTED_ASSET}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: "Prepare Release Assets"
         run: |
@@ -40,6 +56,8 @@ jobs:
           if [ "$VERSION_TYPE" = "homeassistant_debian12_minimal" ]; then
             mv output/armbian-installer-x86_64-standard.iso output/armbian-installer-x86_64-homeassistant_debian12_minimal.iso
           fi
+
+          test -s "output/armbian-installer-x86_64-${VERSION_TYPE}.iso"
           
 
       - name: "Publish"
@@ -48,5 +66,5 @@ jobs:
           tag_name: "Armbian-Installer-x86_64-ISO"
           body_path: ${{ github.workspace }}/info.md
           files: |
-            output/armbian-installer-x86_64-${{ github.event.inputs.version_type }}.iso
+            output/armbian-installer-x86_64-${{ inputs.version_type }}.iso
           token: ${{ secrets.GITHUB_TOKEN }}

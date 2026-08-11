@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       download_url:
-        description: '请输入haos下载地址(扩展名 .img.gz/.img.xz/.img.zip)'
+        description: '输入 latest 自动选择最新 HAOS；或填写直链(.img.gz/.img.xz/.img.zip)'
         required: true
-        default: 'https://github.com/home-assistant/operating-system/releases/download/15.0/haos_generic-x86-64-15.0.img.xz'
+        default: 'latest'
       publish:
         description: '是否创建或更新 GitHub Release'
         required: false
@@ -34,8 +34,8 @@ jobs:
 
       - name: Validate Download URL
         run: |
-          if [[ ! "$DOWNLOAD_URL" =~ ^https?://[^[:space:]]+\.(gz|xz|zip)(\?[^[:space:]]*)?$ ]]; then
-            echo "❌ 错误：地址需以 http(s) 开头且扩展名为 .gz/.xz/.zip"
+          if [[ "$DOWNLOAD_URL" != "latest" && ! "$DOWNLOAD_URL" =~ ^https?://[^[:space:]]+\.(gz|xz|zip)(\?[^[:space:]]*)?$ ]]; then
+            echo "❌ 错误：请输入 latest，或提供以 http(s) 开头且扩展名为 .gz/.xz/.zip 的地址"
             echo "当前输入：$DOWNLOAD_URL"
             exit 1
           fi
@@ -43,6 +43,15 @@ jobs:
       - name: "Build Image"
         run: |
           bash ./haos.sh "$DOWNLOAD_URL"
+
+      - name: Report selected upstream firmware
+        if: ${{ always() }}
+        run: |
+          {
+            echo "### 上游 HAOS 固件"
+            echo "- Release: \`${HAOS_SELECTED_RELEASE:-manual}\`"
+            echo "- Asset: \`${HAOS_SELECTED_ASSET:-$DOWNLOAD_URL}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: "Publish"
         if: ${{ inputs.publish }}

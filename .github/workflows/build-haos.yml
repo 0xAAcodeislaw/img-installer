@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: "Checking out git repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set executable permissions
         run: |
@@ -53,12 +53,15 @@ jobs:
             echo "- Asset: \`${HAOS_SELECTED_ASSET:-$DOWNLOAD_URL}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: "Add upstream version to ISO filename"
+        run: bash ./scripts/versioned-iso.sh output/haos-installer-x86_64.iso "${HAOS_SELECTED_ASSET:-$DOWNLOAD_URL}"
+
       - name: "Publish"
         if: ${{ inputs.publish }}
-        uses: softprops/action-gh-release@v2.2.1
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: "HAOS-Installer-x86_64-ISO"
           body_path: "${{ github.workspace }}/supportFiles/haos/info.md"
           files: |
-            output/haos-installer-x86_64.iso
+            output/*.iso
           token: "${{ secrets.GITHUB_TOKEN }}"

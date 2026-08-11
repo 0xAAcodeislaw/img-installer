@@ -22,6 +22,13 @@ if [ -z "$DOWNLOAD_URLS" ]; then
 fi
 
 FIRST_DOWNLOAD_URL=$(printf '%s\n' "$DOWNLOAD_URLS" | head -n1)
+SELECTED_ASSET=$(basename "${FIRST_DOWNLOAD_URL%%\?*}")
+if [[ -n "${GITHUB_ENV:-}" ]]; then
+  {
+    printf 'ESIR_SELECTED_RELEASE=%s\n' "$TAG"
+    printf 'ESIR_SELECTED_ASSET=%s\n' "$SELECTED_ASSET"
+  } >> "$GITHUB_ENV"
+fi
 echo "下载地址: $FIRST_DOWNLOAD_URL"
 curl -fL --retry 3 --retry-delay 2 --connect-timeout 20 -o "$OUTPUT_PATH" "$FIRST_DOWNLOAD_URL"
 echo "下载esiropenwrt成功!"

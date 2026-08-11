@@ -54,6 +54,12 @@ if [[ -z "$selected_asset" ]]; then
 fi
 
 IFS=$'\t' read -r file_name download_url <<< "$selected_asset"
+if [[ -n "${GITHUB_ENV:-}" ]]; then
+  {
+    printf 'ISTOREOS_SELECTED_RELEASE=%s\n' "$selected_release"
+    printf 'ISTOREOS_SELECTED_ASSET=%s\n' "$file_name"
+  } >> "$GITHUB_ENV"
+fi
 echo "上游仓库: ${REPO}"
 echo "上游 Release: ${selected_release}"
 echo "固件文件: ${file_name}"

@@ -26,7 +26,7 @@ jobs:
     steps:
 
       - name: "Checking out git repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
       
       - name: Set executable permissions
         run: |
@@ -37,14 +37,17 @@ jobs:
         run: |
           bash ./istoreos.sh
       
+      - name: "Add upstream version to ISO filename"
+        run: bash ./scripts/versioned-iso.sh output/istoreos-installer-x86_64.iso "$ISTOREOS_SELECTED_ASSET"
+
       - name: "Publish"
         if: ${{ inputs.publish }}
-        uses: softprops/action-gh-release@v2.2.1
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: "iStoreOS-Installer-x86_64-ISO"
           body_path: ${{ github.workspace }}/supportFiles/istoreos/info.md
           files: |
-            output/istoreos-installer-x86_64.iso
+            output/*.iso
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

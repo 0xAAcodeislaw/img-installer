@@ -38,6 +38,12 @@ if [[ -z "$file_name" ]]; then
 fi
 
 download_url="$(printf '%s' "$release_json" | jq -r --arg name "$file_name" '.assets[] | select(.name == $name) | .browser_download_url')"
+if [[ -n "${GITHUB_ENV:-}" ]]; then
+  {
+    printf 'IMMORTALWRT_SELECTED_RELEASE=%s\n' "$RELEASE_TAG"
+    printf 'IMMORTALWRT_SELECTED_ASSET=%s\n' "$file_name"
+  } >> "$GITHUB_ENV"
+fi
 echo "上游仓库: ${REPO}"
 echo "上游 Release: ${RELEASE_TAG}"
 echo "固件文件: ${file_name}"

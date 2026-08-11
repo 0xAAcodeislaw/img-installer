@@ -34,7 +34,7 @@ jobs:
       ARMBIAN_RELEASE: ${{ inputs.upstream_release }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
       - name: Build Image
         run: bash ./build.sh
@@ -65,12 +65,18 @@ jobs:
           test -s "output/armbian-installer-x86_64-${VERSION_TYPE}.iso"
           
 
+      - name: "Add upstream version to ISO filename"
+        run: |
+          bash ./scripts/versioned-iso.sh \
+            "output/armbian-installer-x86_64-${VERSION_TYPE}.iso" \
+            "${ARMBIAN_SELECTED_ASSET}"
+
       - name: "Publish"
         if: ${{ inputs.publish }}
-        uses: softprops/action-gh-release@v2.2.1
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: "Armbian-Installer-x86_64-ISO"
           body_path: ${{ github.workspace }}/info.md
           files: |
-            output/armbian-installer-x86_64-${{ inputs.version_type }}.iso
+            output/*.iso
           token: ${{ secrets.GITHUB_TOKEN }}

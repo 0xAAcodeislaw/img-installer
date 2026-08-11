@@ -7,6 +7,11 @@ on:
        description: "上游 Release 标签；latest 自动选择最新 iStoreOS x86-64 固件"
        required: true
        default: "latest"
+     publish:
+       description: "是否创建或更新 GitHub Release"
+       required: false
+       default: true
+       type: boolean
 
 permissions:
   contents: write
@@ -33,6 +38,7 @@ jobs:
           bash ./istoreos.sh
       
       - name: "Publish"
+        if: ${{ inputs.publish }}
         uses: softprops/action-gh-release@v2.2.1
         with:
           tag_name: "iStoreOS-Installer-x86_64-ISO"

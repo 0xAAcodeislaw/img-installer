@@ -2,6 +2,12 @@ name: "Build eSirOpenWrt Installer ISO"
 
 on:
  workflow_dispatch:
+   inputs:
+     publish:
+       description: "是否创建或更新 GitHub Release"
+       required: false
+       default: true
+       type: boolean
 
 permissions:
   contents: write
@@ -29,6 +35,7 @@ jobs:
           ./esir.sh
       
       - name: "Publish"
+        if: ${{ inputs.publish }}
         uses: softprops/action-gh-release@v2.2.1
         with:
           tag_name: "eSirOpenWrt-Installer-x86_64-ISO"

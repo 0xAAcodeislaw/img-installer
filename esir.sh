@@ -27,8 +27,21 @@ curl -fL --retry 3 --retry-delay 2 --connect-timeout 20 -o "$OUTPUT_PATH" "$FIRS
 echo "下载esiropenwrt成功!"
 file imm/esiropenwrt.img.gz
 echo "正在解压为:esiropenwrt.img"
-gzip -t imm/esiropenwrt.img.gz
-gzip -d -f imm/esiropenwrt.img.gz
+gzip_log="$(mktemp)"
+trap 'rm -f "$gzip_log"' EXIT
+if ! gzip -t imm/esiropenwrt.img.gz 2>"$gzip_log"; then
+  if ! grep -qi 'trailing garbage ignored' "$gzip_log"; then
+    cat "$gzip_log" >&2
+    exit 1
+  fi
+  echo "警告：上游 gzip 包含可忽略的 trailing garbage，继续提取有效镜像。" >&2
+fi
+if ! gzip -dc imm/esiropenwrt.img.gz > imm/esiropenwrt.img 2>"$gzip_log"; then
+  if ! grep -qi 'trailing garbage ignored' "$gzip_log"; then
+    cat "$gzip_log" >&2
+    exit 1
+  fi
+fi
 test -s imm/esiropenwrt.img
 ls -lh imm/
 echo "准备合成 eSirOpenWrt 安装器"

@@ -2,7 +2,7 @@
 
 #### 适用范围:所有虚拟机和物理机
 #### 安装器中的haos-installer-x86_64.iso 用于快速安装HAOS
-#### 默认版本15.0 haos_generic-x86-64-15.0.img.xz
+#### 默认自动选择 Home Assistant OS 最新稳定版，也支持运行时指定下载地址
 #### 出处:https://github.com/home-assistant/operating-system/releases/
 
 <img src="https://github.com/user-attachments/assets/c5b02f19-12b7-463f-9e01-e080152bed66" width="50%" height="50%">

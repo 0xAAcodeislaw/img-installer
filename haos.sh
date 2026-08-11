@@ -2,17 +2,53 @@
 set -Eeuo pipefail
 
 # 校验参数是否存在
-if [ -z "$1" ]; then
-  echo "❌ 错误：未提供下载地址！"
+if [ "$#" -lt 1 ] || [ -z "${1:-}" ]; then
+  echo "❌ 错误：未提供下载地址或 latest！"
   exit 1
 fi
 
 rm -rf imm
 mkdir -p imm
 DOWNLOAD_URL="$1"
+SELECTED_RELEASE="manual"
+
+# 支持使用 latest 自动跟踪 Home Assistant OS 官方最新稳定版。
+# GitHub 的 /releases/latest 接口不会返回预发布版本，适合用于默认构建。
+if [[ "$DOWNLOAD_URL" == "latest" ]]; then
+  API_URL="https://api.github.com/repos/home-assistant/operating-system/releases/latest"
+  release_json="$(curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 20 \
+    -H 'Accept: application/vnd.github+json' \
+    -H 'X-GitHub-Api-Version: 2022-11-28' \
+    "$API_URL")" || {
+      echo "❌ 获取 Home Assistant OS 最新 Release 失败！" >&2
+      exit 1
+    }
+
+  SELECTED_RELEASE="$(printf '%s' "$release_json" | jq -r '.tag_name // empty')"
+  DOWNLOAD_URL="$(printf '%s' "$release_json" | jq -r '
+    [.assets[]?
+      | select(.name | test("^haos_generic-x86-64-.*\\.img\\.(gz|xz|zip)$"))
+      | .browser_download_url]
+    | .[0] // empty')"
+
+  if [[ -z "$SELECTED_RELEASE" || -z "$DOWNLOAD_URL" ]]; then
+    echo "❌ 最新 HAOS Release 中没有找到 haos_generic-x86-64 压缩镜像！" >&2
+    exit 1
+  fi
+
+  echo "上游 Release: $SELECTED_RELEASE"
+fi
+
 url_path="${DOWNLOAD_URL%%\?*}"
 filename=$(basename "$url_path")
 OUTPUT_PATH="imm/$filename"
+
+if [[ -n "${GITHUB_ENV:-}" ]]; then
+  {
+    printf 'HAOS_SELECTED_RELEASE=%s\n' "$SELECTED_RELEASE"
+    printf 'HAOS_SELECTED_ASSET=%s\n' "$filename"
+  } >> "$GITHUB_ENV"
+fi
 
 echo "下载地址: $DOWNLOAD_URL"
 echo "保存路径: $OUTPUT_PATH"

@@ -18,7 +18,11 @@ fi
 # Release 标签或固件资产名通常包含 vX.Y.Z、X.Y.Z 或日期版本。
 raw_source="${VERSION_SOURCE%%\?*}"
 raw_source="$(basename "$raw_source")"
-version="$(printf '%s' "$raw_source" | grep -oE 'v?[0-9]+([._-][0-9]+){1,}' | head -n 1 || true)"
+version="$(printf '%s' "$raw_source" | grep -oE 'v?[0-9]+(\.[0-9]+){1,}' | head -n 1 || true)"
+
+if [[ -z "$version" ]]; then
+  version="$(printf '%s' "$raw_source" | grep -oE 'v?[0-9]+(-[0-9]+){1,}' | head -n 1 || true)"
+fi
 
 if [[ -z "$version" ]]; then
   # 手工直链没有规范版本号时，保留其文件名作为标识；再无信息则使用 UTC 构建日期。

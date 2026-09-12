@@ -3,7 +3,9 @@ set -Eeuo pipefail
 
 mkdir -p imm
 
-REPO="${IMMORTALWRT_REPO:-wukongdaily/AutoBuildImmortalWrt}"
+# The fork's ImageBuilder workflow publishes the x86-64 EFI assets consumed by
+# this installer.  Keep it overridable for users who maintain another release.
+REPO="${IMMORTALWRT_REPO:-0xAAcodeislaw/ImmortalWrt-ImageBuilder}"
 RELEASE_TAG="${IMMORTALWRT_RELEASE:-Autobuild-x86-64}"
 VERSION="${IMMORTALWRT_VERSION:-latest}"
 API_BASE="https://api.github.com/repos/${REPO}"
@@ -25,9 +27,8 @@ release_json="$(api_get "${API_BASE}/releases/tags/${encoded_release}")"
 if [[ "$VERSION" == "latest" ]]; then
   file_name="$(printf '%s' "$release_json" | jq -r '
     .assets[]?.name
-    | select(test("^(immortalwrt-[0-9][0-9A-Za-z.+~-]*-x86-64-generic-squashfs-combined-efi|immortalwrt_[0-9][0-9A-Za-z.+~-]*_x86-64-efi)\\.img\\.gz$"))'
-    | sort -V
-    | tail -n 1)"
+    | select(test("^(immortalwrt-[0-9][0-9A-Za-z.+~-]*-x86-64-generic-squashfs-combined-efi|immortalwrt_[0-9][0-9A-Za-z.+~-]*_x86-64-efi)\\.img\\.gz$"))' \
+    | sort -V | tail -n 1)"
 else
   new_file_name="immortalwrt_${VERSION}_x86-64-efi.img.gz"
   legacy_file_name="immortalwrt-${VERSION}-x86-64-generic-squashfs-combined-efi.img.gz"

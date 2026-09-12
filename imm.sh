@@ -24,16 +24,24 @@ release_json="$(api_get "${API_BASE}/releases/tags/${encoded_release}")"
 
 if [[ "$VERSION" == "latest" ]]; then
   file_name="$(printf '%s' "$release_json" | jq -r '
-    .assets[]?.name | select(test("^immortalwrt-[0-9][0-9A-Za-z.+~-]*-x86-64-generic-squashfs-combined-efi\\.img\\.gz$"))' | sort -V | tail -n 1)"
+    .assets[]?.name
+    | select(test("^(immortalwrt-[0-9][0-9A-Za-z.+~-]*-x86-64-generic-squashfs-combined-efi|immortalwrt_[0-9][0-9A-Za-z.+~-]*_x86-64-efi)\\.img\\.gz$"))'
+    | sort -V
+    | tail -n 1)"
 else
-  file_name="immortalwrt-${VERSION}-x86-64-generic-squashfs-combined-efi.img.gz"
-  if ! printf '%s' "$release_json" | jq -e --arg name "$file_name" '.assets[]? | select(.name == $name)' >/dev/null; then
-    file_name=""
-  fi
+  new_file_name="immortalwrt_${VERSION}_x86-64-efi.img.gz"
+  legacy_file_name="immortalwrt-${VERSION}-x86-64-generic-squashfs-combined-efi.img.gz"
+  file_name="$(printf '%s' "$release_json" | jq -r \
+    --arg new_name "$new_file_name" \
+    --arg legacy_name "$legacy_file_name" \
+    '[.assets[]?.name | select(. == $new_name or . == $legacy_name)]
+     | if index($new_name) != null then $new_name
+       elif index($legacy_name) != null then $legacy_name
+       else "" end')"
 fi
 
 if [[ -z "$file_name" ]]; then
-  echo "错误：Release ${RELEASE_TAG} 中没有找到 ImmortalWrt x86-64 EFI 固件（版本：${VERSION}）" >&2
+  echo "错误：Release ${RELEASE_TAG} 中没有找到 ImmortalWrt x86-64 EFI 固件（版本：${VERSION}，支持新旧文件名格式）" >&2
   exit 1
 fi
 

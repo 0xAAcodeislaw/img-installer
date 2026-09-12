@@ -33,6 +33,8 @@ jobs:
       - name: "Build Image"
         run: |
           ./esir.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: "Add upstream version to ISO filename"
         run: bash ./scripts/versioned-iso.sh output/esiropenwrt-installer-x86_64.iso "$ESIR_SELECTED_ASSET"

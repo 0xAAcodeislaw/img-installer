@@ -3,14 +3,24 @@ set -Eeuo pipefail
 
 REPO="wkccd/esirOpenWrt"
 api_base="https://api.github.com/repos/$REPO"
-TAG=$(curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 20 "$api_base/releases/latest" | jq -r '.tag_name // empty')
+api_get() {
+  local url="$1"
+  local -a headers=(
+    -H "Accept: application/vnd.github+json"
+    -H "X-GitHub-Api-Version: 2022-11-28"
+  )
+  [[ -n "${GITHUB_TOKEN:-}" ]] && headers+=( -H "Authorization: Bearer ${GITHUB_TOKEN}" )
+  curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 20 "${headers[@]}" "$url"
+}
+
+TAG=$(api_get "$api_base/releases/latest" | jq -r '.tag_name // empty')
 if [[ -z "$TAG" ]]; then
-  TAG=$(curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 20 "$api_base/tags" | jq -r '.[0].name // empty')
+  TAG=$(api_get "$api_base/tags" | jq -r '.[0].name // empty')
 fi
 [ -n "$TAG" ] || { echo "Error: no release or tag found for $REPO" >&2; exit 1; }
 echo "最新TAG: $TAG"
 # 获取该 Tag 下所有以 .img.gz 结尾的文件
-DOWNLOAD_URLS=$(curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 20 "$api_base/releases/tags/$TAG" \
+DOWNLOAD_URLS=$(api_get "$api_base/releases/tags/$TAG" \
   | jq -r '.assets[] | select(.name | endswith("img.gz")) | .browser_download_url')
 # 保存位置
 mkdir -p imm
